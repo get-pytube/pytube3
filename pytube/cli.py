@@ -13,6 +13,7 @@ import sys
 
 from pytube import __version__
 from pytube import YouTube
+from pytube.helpers import safe_filename
 
 
 logger = logging.getLogger(__name__)
@@ -46,6 +47,16 @@ def main():
             'Save the html and js to disk'
         ),
     )
+    parser.add_argument(
+        '-r', '--resolution', type=str, help=(
+            'The resolution for the desired stream'
+        ),
+    )
+    parser.add_argument(
+        '-c', '--caption-code', type=str, default='en', help=(
+            'The caption code for the desired stream'
+        ),
+    )
 
     args = parser.parse_args()
     logging.getLogger().setLevel(max(3 - args.verbosity, 0) * 10)
@@ -63,6 +74,9 @@ def main():
     elif args.itag:
         download(args.url, args.itag)
 
+    elif args.resolution:
+        download_caption(args.url, args.caption_code)
+        download_by_resolution(args.url, args.resolution)
 
 def build_playback_report(url):
     """Serialize the request data to json for offline debugging.
@@ -161,9 +175,9 @@ def download(url, itag):
     # TODO(nficano): allow dash itags to be selected
     yt = YouTube(url, on_progress_callback=on_progress)
     stream = yt.streams.get_by_itag(itag)
-    print('\n{fn} | {fs} bytes'.format(
+    print('\n{fn} | {fs:.2f} MB'.format(
         fn=stream.default_filename,
-        fs=stream.filesize,
+        fs=stream.filesize / 10**6,
     ))
     try:
         stream.download()
@@ -183,6 +197,38 @@ def display_streams(url):
     for stream in yt.streams.all():
         print(stream)
 
+def save_caption(url, lang_code):
+    yt = YouTube(url)
+    caption = yt.captions.get_by_language_code(lang_code)
+    srt_file_name = safe_filename(yt.title) + ".srt"
+    with open(srt_file_name, 'w', encoding="utf-8") as fp:
+        fp.write(caption.generate_srt_captions())
+
+def download_caption(url, lang_code):
+    yt = YouTube(url)
+    available_caption_codes = set()
+    for caption in yt.captions.all():
+        if caption.code == lang_code:
+            save_caption(url, lang_code)
+            break
+        elif caption.code:
+            available_caption_codes.add(caption.code)
+    else:
+        print("Unable to find caption with code: {}".format(lang_code))
+        print("Available caption codes are: {}".format(available_caption_codes))
+
+def download_by_resolution(url, resolution):
+    yt = YouTube(url)
+    available_resolutions = set()
+    for stream in yt.streams.all():
+        if stream.resolution == resolution:
+            download(url, stream.itag)
+            break
+        elif stream.resolution:
+            available_resolutions.add(stream.resolution)
+    else:
+        print("Unable to find video with resolution: {}".format(resolution))
+        print("Available resolutions are: {}".format(available_resolutions))
 
 if __name__ == '__main__':
     main()
