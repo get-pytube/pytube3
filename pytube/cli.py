@@ -35,12 +35,14 @@ def main():
         display_streams(youtube)
     if args.build_playback_report:
         build_playback_report(youtube)
-    if args.itag:
-        download_by_itag(youtube=youtube, itag=args.itag)
     if hasattr(args, "caption_code"):
         download_caption(youtube=youtube, lang_code=args.caption_code)
+    if args.itag:
+        download_by_itag(youtube=youtube, itag=args.itag)
     if args.resolution:
         download_by_resolution(youtube=youtube, resolution=args.resolution)
+    if args.audio:
+        download_audio(youtube=youtube)
 
 
 def _parse_args(
@@ -88,6 +90,14 @@ def _parse_args(
             "Download srt captions for given language code. "
             "Prints available language codes if no argument given"
         ),
+    )
+    parser.add_argument(
+        "-a",
+        "--audio",
+        action="store_true",
+        help=(
+            "Download the audio for a given URL at the highest bitrate available"
+        )
     )
 
     return parser.parse_args(args)
@@ -232,6 +242,20 @@ def download_by_resolution(youtube: YouTube, resolution: str) -> None:
     except KeyboardInterrupt:
         sys.exit()
 
+def download_audio(youtube: YouTube) -> None:
+    audio = youtube.streams.filter(only_audio=True).order_by("abr").desc().first()
+    if audio is None:
+        print(
+            "No audio only stream found. Try one of these:")
+        display_streams(youtube)
+        sys.exit()
+
+    youtube.register_on_progress_callback(on_progress)
+
+    try:
+        _download(audio)
+    except KeyboardInterrupt:
+        sys.exit()
 
 def display_streams(youtube: YouTube) -> None:
     """Probe YouTube video and lists its available formats.
