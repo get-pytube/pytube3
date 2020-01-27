@@ -242,7 +242,15 @@ def download_by_resolution(youtube: YouTube, resolution: str) -> None:
     except KeyboardInterrupt:
         sys.exit()
 
+        
 def download_audio(youtube: YouTube) -> None:
+    """
+    Start downloading a YouTube video.
+    
+    :param YouTube youtube:
+        A valid YouTube object.
+        
+    """
     audio = youtube.streams.filter(only_audio=True).order_by("abr").desc().first()
     if audio is None:
         print(
@@ -256,6 +264,7 @@ def download_audio(youtube: YouTube) -> None:
         _download(audio)
     except KeyboardInterrupt:
         sys.exit()
+        
 
 def display_streams(youtube: YouTube) -> None:
     """Probe YouTube video and lists its available formats.
