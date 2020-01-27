@@ -9,7 +9,7 @@ import logging
 import os
 import sys
 from io import BufferedWriter
-from typing import Tuple, Any, Optional, List
+from typing import Tuple, Any, Optional, List, Union
 
 from pytube import __version__, CaptionQuery, Stream
 from pytube import YouTube
@@ -42,7 +42,7 @@ def main():
     if args.resolution:
         download_by_resolution(youtube=youtube, resolution=args.resolution)
     if args.audio:
-        download_audio(youtube=youtube)
+        download_audio(youtube=youtube, format=args.audio)
 
 
 def _parse_args(
@@ -94,7 +94,8 @@ def _parse_args(
     parser.add_argument(
         "-a",
         "--audio",
-        action="store_true",
+        const="mp4",
+        nargs="?",
         help=(
             "Download the audio for a given URL at the highest bitrate available"
         )
@@ -242,16 +243,20 @@ def download_by_resolution(youtube: YouTube, resolution: str) -> None:
     except KeyboardInterrupt:
         sys.exit()
 
-        
-def download_audio(youtube: YouTube) -> None:
+
+def download_audio(youtube: YouTube, format: str) -> None:
     """
     Start downloading a YouTube video.
     
     :param YouTube youtube:
         A valid YouTube object.
+    :param str format:
+        Desired file format to download.
         
     """
-    audio = youtube.streams.filter(only_audio=True).order_by("abr").desc().first()
+    audio = youtube.streams.filter(only_audio=True, subtype=format)\
+        .order_by("abr").desc().first()
+
     if audio is None:
         print(
             "No audio only stream found. Try one of these:")
@@ -264,7 +269,7 @@ def download_audio(youtube: YouTube) -> None:
         _download(audio)
     except KeyboardInterrupt:
         sys.exit()
-        
+
 
 def display_streams(youtube: YouTube) -> None:
     """Probe YouTube video and lists its available formats.
