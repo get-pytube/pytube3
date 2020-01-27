@@ -237,7 +237,7 @@ def download_by_resolution(youtube: YouTube, resolution: str) -> None:
         sys.exit()
 
     youtube.register_on_progress_callback(on_progress)
-swiftyy-mage:master
+
     try:
         _download(stream)
     except KeyboardInterrupt:
@@ -250,7 +250,7 @@ def download_audio(youtube: YouTube, filetype: str) -> None:
     
     :param YouTube youtube:
         A valid YouTube object.
-    :param str format:
+    :param str filetype:
         Desired file format to download.
 
     """
