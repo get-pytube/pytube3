@@ -9,7 +9,7 @@ import logging
 import os
 import sys
 from io import BufferedWriter
-from typing import Tuple, Any, Optional, List, Union
+from typing import Tuple, Any, Optional, List
 
 from pytube import __version__, CaptionQuery, Stream
 from pytube import YouTube
@@ -42,7 +42,7 @@ def main():
     if args.resolution:
         download_by_resolution(youtube=youtube, resolution=args.resolution)
     if args.audio:
-        download_audio(youtube=youtube, format=args.audio)
+        download_audio(youtube=youtube, filetype=args.audio)
 
 
 def _parse_args(
@@ -237,14 +237,14 @@ def download_by_resolution(youtube: YouTube, resolution: str) -> None:
         sys.exit()
 
     youtube.register_on_progress_callback(on_progress)
-
+swiftyy-mage:master
     try:
         _download(stream)
     except KeyboardInterrupt:
         sys.exit()
 
 
-def download_audio(youtube: YouTube, format: str) -> None:
+def download_audio(youtube: YouTube, filetype: str) -> None:
     """
     Start downloading a YouTube video.
     
@@ -252,9 +252,9 @@ def download_audio(youtube: YouTube, format: str) -> None:
         A valid YouTube object.
     :param str format:
         Desired file format to download.
-        
+
     """
-    audio = youtube.streams.filter(only_audio=True, subtype=format)\
+    audio = youtube.streams.filter(only_audio=True, subtype=filetype)\
         .order_by("abr").desc().first()
 
     if audio is None:
