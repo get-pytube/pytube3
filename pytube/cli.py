@@ -10,9 +10,12 @@ import os
 import sys
 from io import BufferedWriter
 from typing import Tuple, Any, Optional, List
+import pathlib
+import subprocess
 
 from pytube import __version__, CaptionQuery, Stream
 from pytube import YouTube
+from pytube.helpers import safe_filename
 
 
 logger = logging.getLogger(__name__)
@@ -30,6 +33,7 @@ def main():
         sys.exit(1)
 
     youtube = YouTube(args.url)
+    print(youtube)
 
     if args.list:
         display_streams(youtube)
@@ -37,6 +41,8 @@ def main():
         build_playback_report(youtube)
     if hasattr(args, "caption_code"):
         download_caption(youtube=youtube, lang_code=args.caption_code)
+    if args.ffmpeg:
+        ff_best(youtube=youtube)    
     if args.itag:
         download_by_itag(youtube=youtube, itag=args.itag)
     if args.resolution:
@@ -98,6 +104,15 @@ def _parse_args(
         nargs="?",
         help=(
             "Download the audio for a given URL at the highest bitrate available"
+        )
+    )
+    parser.add_argument(
+        "-f",
+        "--ffmpeg",
+        action="store_true",
+        help=(
+            "Creates a video using ffmpeg consisting of the highest res and abr \
+            video and audio streams available of the same format"
         )
     )
 
@@ -182,7 +197,7 @@ def on_progress(
     display_progress_bar(bytes_received, filesize)
 
 
-def _download(stream: Stream) -> None:
+def _download(stream: Stream, output_path: Optional[str] = None) -> None:
     print("\n{fn} | {fs} bytes".format(fn=stream.default_filename, fs=stream.filesize))
     stream.download()
     sys.stdout.write("\n")
@@ -247,10 +262,10 @@ def download_by_resolution(youtube: YouTube, resolution: str) -> None:
 def download_audio(youtube: YouTube, filetype: str) -> None:
     """
     Start downloading a YouTube video.
-    
+
     :param YouTube youtube:
         A valid YouTube object.
-    :param str filetype:
+    :param str format:
         Desired file format to download.
 
     """
@@ -312,6 +327,45 @@ def download_caption(youtube: YouTube, lang_code: Optional[str]) -> None:
     else:
         print("Unable to find caption with code: {}".format(lang_code))
         _print_available_captions(youtube.captions)
+
+
+def unique_name(base: str, subtype: str, video_audio: str) -> str:
+    counter = 0
+    while True:
+        current_path = pathlib.Path.cwd()
+        name = f"{base}_{video_audio}_{counter}"
+        unique = current_path / f"{name}.{subtype}"
+
+        if not unique.exists():
+            return str(name)
+        counter += 1
+
+
+def ff_best(youtube: YouTube) -> None:
+    youtube.register_on_progress_callback(on_progress)
+    video_stream = youtube.streams.filter(progressive=False, subtype="mp4").order_by("resolution")\
+    .desc().first()
+    audio_stream = youtube.streams.filter(only_audio=True, subtype=video_stream.subtype)\
+    .order_by("abr").desc().first()
+
+    if not (video_stream and audio_stream):
+        video_stream = youtube.streams.filter(progressive=False).order_by("resolution").desc().first()
+        audio_stream = youtube.streams.filter(only_audio=True, subtype=video_stream.subtype)\
+        .order_by("abr").desc().first()
+    
+    video_unique_name = unique_name(safe_filename(video_stream.title), video_stream.subtype, "video")
+    audio_unique_name = unique_name(safe_filename(video_stream.title), video_stream.subtype, "audio")
+    video_stream.download(filename=video_unique_name)
+    audio_stream.download(filename=audio_unique_name)
+
+    video_path = pathlib.Path.cwd() / f"{video_unique_name}.{video_stream.subtype}"
+    audio_path = pathlib.Path.cwd() / f"{audio_unique_name}.{video_stream.subtype}"
+    final_path = pathlib.Path.cwd() / f"{safe_filename(video_stream.title)}.{video_stream.subtype}"
+
+    subprocess.run(["ffmpeg", "-i", f"{video_path}", "-i", f"{audio_path}",
+    "-codec", "copy", f'{final_path}'])
+    video_path.unlink()
+    audio_path.unlink()    
 
 
 if __name__ == "__main__":
