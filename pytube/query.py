@@ -298,6 +298,42 @@ class StreamQuery(Sequence):
         """
         return self._filter([lambda s: s.is_otf == is_otf])
 
+    def audio_only(self, audio_only_bool: bool = True) -> "StreamQuery":
+
+        return StreamQuery(
+            list(
+                filter(
+                    (lambda s:
+                        (s.includes_audio_track and not s.includes_video_track)
+                        is audio_only_bool
+                    ),
+                    self.fmt_streams
+                )
+            )
+        )
+
+    def abr(self, average_bitrate: str) -> "StreamQuery":
+
+        return StreamQuery(
+            list(
+                filter(
+                    lambda s: s.abr == average_bitrate,                
+                    self.fmt_streams
+                )
+            )
+        )
+
+    def res(self, resolution: str) -> "StreamQuery":
+
+        return StreamQuery(
+            list(
+                filter(
+                    lambda s: s.res == resolution,
+                    self.fmt_streams
+                )
+            )
+        )
+
     def first(self) -> Optional[Stream]:
         """Get the first :class:`Stream <Stream>` in the results.
 
