@@ -134,9 +134,7 @@ class StreamQuery(Sequence):
         :rtype: :class:`StreamQuery <StreamQuery>`
         :returns: A StreamQuery object with otf filtered streams.
         """
-        return StreamQuery(
-            list(filter(lambda s: s.is_otf == is_otf), self.fmt_streams)
-        )
+        return StreamQuery(list(filter(lambda s: s.is_otf == is_otf), self.fmt_streams))
 
     def audio_only(self, audio_only_bool: bool = True) -> Optional["StreamQuery"]:
         """Return only streams which are audio only if audio_only_bool is
@@ -149,11 +147,19 @@ class StreamQuery(Sequence):
         :returns: A StreamQuery object such that either every Stream is
         audio only, or every stream is not audio only.
         """
-        condition = (
-            lambda s: (s.includes_audio_track and not s.includes_video_track)
-            is audio_only_bool
+        return StreamQuery(
+            list(
+                filter(
+                    (
+                        lambda s: (
+                            s.includes_audio_track and not s.includes_video_track
+                        )
+                        is audio_only_bool
+                    ),
+                    self.fmt_streams,
+                )
+            )
         )
-        return StreamQuery(list(filter(condition, self.fmt_streams)))
 
     def video_only(self, video_only_bool: bool = True) -> Optional["StreamQuery"]:
         """Return only streams which are audio only if video_only_bool is
@@ -165,11 +171,19 @@ class StreamQuery(Sequence):
         :returns: A StreamQuery object such that either every Stream is
         video only, or every stream is not video only.
         """
-        condition = (
-            lambda s: (s.includes_video_track and not s.includes_audio_track)
-            is video_only_bool
+        return StreamQuery(
+            list(
+                filter(
+                    (
+                        lambda s: (
+                            s.includes_video_track and not s.includes_audio_track
+                        )
+                        is video_only_bool
+                    ),
+                    self.fmt_streams,
+                )
+            )
         )
-        return StreamQuery(list(filter(condition, self.fmt_streams)))
 
     def abr(self, average_bitrate: int) -> Optional["StreamQuery"]:
         """Return only streams of the given average bitrate.
@@ -179,8 +193,13 @@ class StreamQuery(Sequence):
         :returns: A StreamQuery object such that every Stream has the
         bitrate defined by the user, or None if none are available.
         """
-        condition = lambda s: s.abr == f"{str(average_bitrate)}kbps"
-        return StreamQuery(list(filter(condition, self.fmt_streams)))
+        return StreamQuery(
+            list(
+                filter(
+                    lambda s: s.abr == f"{str(average_bitrate)}kbps", self.fmt_streams
+                )
+            )
+        )
 
     def res(self, resolution: int) -> Optional["StreamQuery"]:
         """Return only streams of the given resolution.
@@ -190,8 +209,13 @@ class StreamQuery(Sequence):
         :returns: A StreamQuery object such that every Stream is of the
         resolution defined by the user, or None if none are available.
         """
-        condition = lambda s: s.resolution == f"{str(resolution)}p"
-        return StreamQuery(list(filter(condition, self.fmt_streams)))
+        return StreamQuery(
+            list(
+                filter(
+                    lambda s: s.resolution == f"{str(resolution)}p", self.fmt_streams
+                )
+            )
+        )
 
     def fps(self, framerate: int) -> Optional["StreamQuery"]:
         """Return only streams of the given framerate.
@@ -201,19 +225,17 @@ class StreamQuery(Sequence):
         :returns: A StreamQuery object such that every Stream is of the
         resolution defined by the user, or None if none are available.
         """
-        condition = lambda s: s.fps == framerate
-        return StreamQuery(list(filter(condition, self.fmt_streams)))
+        return StreamQuery(list(filter(lambda s: s.fps == framerate, self.fmt_streams)))
 
     def primary_type(self, type: str) -> Optional["StreamQuery"]:
         """Return only streams of the given type.
         :param str type:
             "type" part of the ``mime_type`` (e.g.: audio, video).
         :rtype: :class:`StreamQuery <StreamQuery>`
-        :returns: A StreamQuery object such that every Stream is of the 
+        :returns: A StreamQuery object such that every Stream is of the
         type defined by the user.
         """
-        condition = lambda s: s.type == type
-        return StreamQuery(list(filter(condition, self.fmt_streams)))
+        return StreamQuery(list(filter(lambda s: s.type == type, self.fmt_streams)))
 
     def mime_type(self, mime_type: str) -> Optional["StreamQuery"]:
         """Return only streams of the given mime_type.
@@ -221,22 +243,24 @@ class StreamQuery(Sequence):
             Two-part identifier for file formats and format contents
             composed of a "type", a "subtype".
         :rtype: :class:`StreamQuery <StreamQuery>`
-        :returns: A StreamQuery object such that every Stream is of the 
+        :returns: A StreamQuery object such that every Stream is of the
         mime_type defined by the user.
         """
-        condition = lambda s: s.mime_type == mime_type
-        return StreamQuery(list(filter(condition, self.fmt_streams)))
+        return StreamQuery(
+            list(filter(lambda s: s.mime_type == mime_type, self.fmt_streams))
+        )
 
     def subtype(self, subtype: str) -> Optional["StreamQuery"]:
         """Return only streams of the given subtype .
         :param str subtype:
             "subtype" part of the ``mime_type`` (e.g.: audio, video).
         :rtype: :class:`StreamQuery <StreamQuery>`
-        :returns: A StreamQuery object such that every Stream is of the 
+        :returns: A StreamQuery object such that every Stream is of the
         subtype defined by the user.
         """
-        condition = lambda s: s.subtype == subtype
-        return StreamQuery(list(filter(condition, self.fmt_streams)))
+        return StreamQuery(
+            list(filter(lambda s: s.subtype == subtype, self.fmt_streams))
+        )
 
     def video_codec(self, vid_codec: str) -> Optional["StreamQuery"]:
         """Return only streams with the given video codec.
@@ -245,8 +269,9 @@ class StreamQuery(Sequence):
         :returns: A StreamQuery object such that every stream is encoded
         using the given video codec, or None if none are available.
         """
-        condition = lambda s: s.video_codec == vid_codec
-        return StreamQuery(list(filter(condition, self.fmt_streams)))
+        return StreamQuery(
+            list(filter(lambda s: s.video_codec == vid_codec, self.fmt_streams))
+        )
 
     def audio_codec(self, aud_codec: str) -> Optional["StreamQuery"]:
         """Return only streams with the given audio codec.
@@ -255,24 +280,23 @@ class StreamQuery(Sequence):
         :returns: A StreamQuery object such that every stream is encoded
         using the given audio codec, or None if none are available.
         """
-        condition = lambda s: s.audio_codec == aud_codec
-        return StreamQuery(list(filter(condition, self.fmt_streams)))
+        return StreamQuery(
+            list(filter(lambda s: s.audio_codec == aud_codec, self.fmt_streams))
+        )
 
     def is_progressive(self) -> Optional["StreamQuery"]:
         """Return only progressive streams.
         :rtype: :class:`StreamQuery <StreamQuery>`
         :returns: A StreamQuery object such that every Stream is progressive.
         """
-        condition = lambda s: s.is_progressive
-        return StreamQuery(list(filter(condition, self.fmt_streams)))
+        return StreamQuery(list(filter(lambda s: s.is_progressive, self.fmt_streams)))
 
     def is_adaptive(self) -> Optional["StreamQuery"]:
         """Return only adaptive/DASH streams.
         :rtype: :class:`StreamQuery <StreamQuery>`
         :returns: A StreamQuery object such that every Stream is adaptive.
         """
-        condition = lambda s: s.is_adaptive
-        return StreamQuery(list(filter(condition, self.fmt_streams)))
+        return StreamQuery(list(filter(lambda s: s.is_adaptive, self.fmt_streams)))
 
     def custom_filters(self, filters: List[Callable]) -> Optional["StreamQuery"]:
         """Return only those streams such that when applied to all functions
