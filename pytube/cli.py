@@ -281,11 +281,10 @@ def ffmpeg_process(
         else:
             video_stream = highest_quality_stream
     else:
-        video_stream = (
-            youtube.streams.is_adaptive().res(resolution).subtype("mp4").first()
-        )
+        int_res = int(resolution)
+        video_stream = youtube.streams.is_adaptive().res(int_res).subtype("mp4").first()
         if not video_stream:
-            video_stream = youtube.streams.is_adaptive().res(resolution).first()
+            video_stream = youtube.streams.is_adaptive().res(int_res).first()
     if video_stream is None:
         print(f"Could not find a stream with resolution: {resolution}")
         print("Try one of these:")
