@@ -189,7 +189,7 @@ class Playlist(Sequence):
         download_path: Optional[str] = None,
         prefix_number: bool = True,
         reverse_numbering: bool = False,
-        resolution: str = "720p",
+        resolution: int = 720,
     ) -> None:  # pragma: no cover
         """Download all the videos in the the playlist.
 
@@ -207,8 +207,8 @@ class Playlist(Sequence):
             playlists are ordered newest -> oldest.
         :type reverse_numbering: bool
         :param resolution:
-            Video resolution i.e. "720p", "480p", "360p", "240p", "144p"
-        :type resolution: str
+            Video resolution i.e. 720, 480, 360, 240, 144
+        :type resolution: int
         """
         logger.debug("total videos found: %d", len(self.video_urls))
         logger.debug("starting download")
