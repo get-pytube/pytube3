@@ -298,7 +298,7 @@ def apply_descrambler(stream_data: Dict, key: str) -> None:
             ]
         except KeyError:
             cipher_url = [
-                parse_qs(formats[i]["cipher"]) for i, data in enumerate(formats)
+                parse_qs(formats[i]["signatureCipher"]) for i, data in enumerate(formats) if "signatureCipher" in formats[i]
             ]
             stream_data[key] = [
                 {
