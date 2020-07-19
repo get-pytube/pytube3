@@ -113,7 +113,8 @@ class YouTube:
 
             # Fix for KeyError: 'title' issue #434
             if "title" not in self.player_config_args:  # type: ignore
-                i_start = self.watch_html.lower().index("<title>") + len("<title>")
+                i_start = self.watch_html.lower().index("<meta property=\"og:title\" content=\"") \
+                          + len("<meta property=\"og:title\" content=\"")
                 i_end = self.watch_html.lower().index("</title>")
                 title = self.watch_html[i_start:i_end].strip()
                 index = title.lower().rfind(" - youtube")

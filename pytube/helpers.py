@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
-
 """Various helper functions implemented by pytube."""
 import functools
 import logging
 import os
 import re
 import warnings
-from typing import TypeVar, Callable, Optional, Dict, List, Any
+from typing import Any
+from typing import Callable
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import TypeVar
 from urllib import request
 
 from pytube.exceptions import RegexMatchError
@@ -53,7 +57,7 @@ def safe_filename(s: str, max_length: int = 255) -> str:
         A sanitized string.
     """
     # Characters in range 0-31 (0x00-0x1F) are not allowed in ntfs filenames.
-    ntfs_characters = [chr(i) for i in range(0, 31)]
+    ntfs_characters = [chr(i) for i in range(31)]
     characters = [
         r'"',
         r"\#",

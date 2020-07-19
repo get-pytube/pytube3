@@ -3,10 +3,13 @@ import math
 import os
 import time
 import xml.etree.ElementTree as ElementTree
-from typing import Dict, Optional
-from pytube import request
 from html import unescape
-from pytube.helpers import safe_filename, target_directory
+from typing import Dict
+from typing import Optional
+
+from pytube import request
+from pytube.helpers import safe_filename
+from pytube.helpers import target_directory
 
 
 class Caption:
@@ -116,11 +119,7 @@ class Caption:
 
         filename += f" ({self.code})"
 
-        if srt:
-            filename += ".srt"
-        else:
-            filename += ".xml"
-
+        filename += ".srt" if srt else ".xml"
         file_path = os.path.join(target_directory(output_path), filename)
 
         with open(file_path, "w", encoding="utf-8") as file_handle:
