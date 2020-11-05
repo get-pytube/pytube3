@@ -117,7 +117,8 @@ def js_url(html: str) -> str:
     :param str html:
         The html contents of the watch page.
     """
-    base_js = get_ytplayer_js(html)
+   # base_js = get_ytplayer_js(html)
+    base_js=re.search("\/s\/player.*\/base\.js",html).group()
     return "https://youtube.com" + base_js
 
 
