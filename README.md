@@ -305,5 +305,6 @@ Treat other people with helpfulness, gratitude, and consideration! See the [Pyth
 ## GUIs and other libraries
 * [YouTubeDownload](https://github.com/YouTubeDownload/YouTubeDownload) - Featured GUI frontend for pytube3
 * [Pytube-GUI](https://github.com/GAO23/Pytube-GUI) - Simple GUI frontend for pytube3
+* [YTDownloader](https://github.com/LeMoustache/YTDownloader) - Featured GUI frontend for pytube3 & .mp4 to .mp3 converter
 * [StackOverflow questions](https://stackoverflow.com/questions/tagged/pytube)
 * [PySlackers](https://pyslackers.com/web) - Python Slack group
