@@ -81,7 +81,7 @@ def _parse_args(
         "--itag", type=int, help="The itag for the desired stream",
     )
     parser.add_argument(
-        "-r", "--resolution", type=str, help="The resolution for the desired stream",
+        "-r", "--resolution", type=int, help="The resolution for the desired stream",
     )
     parser.add_argument(
         "-l",
@@ -271,34 +271,27 @@ def ffmpeg_process(
 
     if resolution == "best":
         highest_quality_stream = (
-            youtube.streams.filter(progressive=False).order_by("resolution").last()
+            youtube.streams.is_adaptive().order_by("resolution").last()
         )
         mp4_stream = (
-            youtube.streams.filter(progressive=False, subtype="mp4")
-            .order_by("resolution")
-            .last()
+            youtube.streams.is_adaptive().subtype("mp4").order_by("resolution").last()
         )
         if highest_quality_stream.resolution == mp4_stream.resolution:
             video_stream = mp4_stream
         else:
             video_stream = highest_quality_stream
     else:
-        video_stream = youtube.streams.filter(
-            progressive=False, resolution=resolution, subtype="mp4"
-        ).first()
+        int_res = int(resolution)
+        video_stream = youtube.streams.is_adaptive().res(int_res).subtype("mp4").first()
         if not video_stream:
-            video_stream = youtube.streams.filter(
-                progressive=False, resolution=resolution
-            ).first()
+            video_stream = youtube.streams.is_adaptive().res(int_res).first()
     if video_stream is None:
         print(f"Could not find a stream with resolution: {resolution}")
         print("Try one of these:")
         display_streams(youtube)
         sys.exit()
 
-    audio_stream = youtube.streams.get_audio_only(video_stream.subtype)
-    if not audio_stream:
-        audio_stream = youtube.streams.filter(only_audio=True).order_by("abr").last()
+    audio_stream = youtube.streams.get_best_audio(video_stream.subtype)
     if not audio_stream:
         print("Could not find an audio only stream")
         sys.exit()
@@ -370,13 +363,13 @@ def download_by_itag(youtube: YouTube, itag: int, target: Optional[str] = None) 
 
 
 def download_by_resolution(
-    youtube: YouTube, resolution: str, target: Optional[str] = None
+    youtube: YouTube, resolution: int, target: Optional[str] = None
 ) -> None:
     """Start downloading a YouTube video.
 
     :param YouTube youtube:
         A valid YouTube object.
-    :param str resolution:
+    :param int resolution:
         YouTube video resolution.
     :param str target:
         Target directory for download

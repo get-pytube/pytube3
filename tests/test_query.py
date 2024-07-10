@@ -123,7 +123,7 @@ def test_get_by_non_existent_itag(cipher_signature):
 
 
 def test_get_by_resolution(cipher_signature):
-    assert cipher_signature.streams.get_by_resolution("360p").itag == 18
+    assert cipher_signature.streams.get_by_resolution(360).itag == 18
 
 
 def test_get_lowest_resolution(cipher_signature):
@@ -141,11 +141,11 @@ def test_filter_is_dash(cipher_signature):
 
 
 def test_get_audio_only(cipher_signature):
-    assert cipher_signature.streams.get_audio_only().itag == 140
+    assert cipher_signature.streams.get_best_audio().itag == 140
 
 
 def test_get_audio_only_with_subtype(cipher_signature):
-    assert cipher_signature.streams.get_audio_only(subtype="webm").itag == 251
+    assert cipher_signature.streams.get_best_audio(subtype="webm").itag == 251
 
 
 def test_sequence(cipher_signature):

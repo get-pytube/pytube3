@@ -20,6 +20,346 @@ class StreamQuery(Sequence):
         self.fmt_streams = fmt_streams
         self.itag_index = {int(s.itag): s for s in fmt_streams}
 
+    def order_by(self, attribute_name: str) -> "StreamQuery":
+        """Apply a sort order. Filters out stream the do not have the attribute.
+
+        :param str attribute_name:
+            The name of the attribute to sort by.
+        """
+        has_attribute = [
+            s for s in self.fmt_streams if getattr(s, attribute_name) is not None
+        ]
+        # Check that the attributes have string values.
+        if has_attribute and isinstance(getattr(has_attribute[0], attribute_name), str):
+            # Try to return a StreamQuery sorted by the integer representations
+            # of the values.
+            try:
+                return StreamQuery(
+                    sorted(
+                        has_attribute,
+                        key=lambda s: int(
+                            "".join(filter(str.isdigit, getattr(s, attribute_name)))
+                        ),  # type: ignore  # noqa: E501
+                    )
+                )
+            except ValueError:
+                pass
+
+        return StreamQuery(
+            sorted(has_attribute, key=lambda s: getattr(s, attribute_name))
+        )
+
+    def desc(self) -> "StreamQuery":
+        """Sort streams in descending order.
+
+        :rtype: :class:`StreamQuery <StreamQuery>`
+
+        """
+        return StreamQuery(self.fmt_streams[::-1])
+
+    def asc(self) -> "StreamQuery":
+        """Sort streams in ascending order.
+
+        :rtype: :class:`StreamQuery <StreamQuery>`
+
+        """
+        return self
+
+    def get_by_itag(self, itag: int) -> Optional[Stream]:
+        """Get the corresponding :class:`Stream <Stream>` for a given itag.
+
+        :param int itag:
+            YouTube format identifier code.
+        :rtype: :class:`Stream <Stream>` or None
+        :returns:
+            The :class:`Stream <Stream>` matching the given itag or None if
+            not found.
+
+        """
+        return self.itag_index.get(int(itag))
+
+    def get_by_resolution(self, resolution: int) -> Optional[Stream]:
+        """Get the corresponding :class:`Stream <Stream>` for a given resolution.
+
+        Stream must be a progressive mp4.
+
+        :param str resolution:
+            Video resolution i.e. "720p", "480p", "360p", "240p", "144p".
+        :rtype: :class:`Stream <Stream>` or None
+        :returns:
+            The :class:`Stream <Stream>` matching the given itag or None if
+            not found.
+
+        """
+        return self.is_progressive().subtype("mp4").res(resolution).first()
+
+    def get_lowest_resolution(self) -> Optional[Stream]:
+        """Get lowest resolution stream that is a progressive mp4.
+
+        :rtype: :class:`Stream <Stream>` or None
+        :returns:
+            The :class:`Stream <Stream>` matching the given itag or None if
+            not found.
+
+        """
+        return self.is_progressive().subtype("mp4").order_by("resolution").first()
+
+    def get_highest_resolution(self) -> Optional[Stream]:
+        """Get highest resolution stream that is a progressive video.
+
+        :rtype: :class:`Stream <Stream>` or None
+        :returns:
+            The :class:`Stream <Stream>` matching the given itag or None if
+            not found.
+
+        """
+        return self.is_progressive().order_by("resolution").last()
+
+    def get_best_audio(self, subtype: str = "mp4") -> Optional[Stream]:
+        """Get highest bitrate audio stream for given codec (defaults to mp4).
+
+        :param str subtype:
+            Audio subtype, defaults to mp4.
+        :rtype: :class:`Stream <Stream>` or None
+        :returns:
+            The :class:`Stream <Stream>` matching the given itag or None if
+            not found.
+        """
+        return self.audio_only().subtype(subtype).order_by("abr").last()
+
+    def otf(self, is_otf: bool = False) -> "StreamQuery":
+        """Filter stream by OTF, useful if some streams have 404 URLs.
+
+        :param bool is_otf: Set to False to retrieve only non-OTF streams
+        :rtype: :class:`StreamQuery <StreamQuery>`
+        :returns: A StreamQuery object with otf filtered streams.
+        """
+        return StreamQuery(list(filter(lambda s: s.is_otf == is_otf, self.fmt_streams)))
+
+    def audio_only(self, audio_only_bool: bool = True) -> "StreamQuery":
+        """Return only streams which are audio only if audio_only_bool is
+        True, return only streams which are not audio only if audio_only_bool
+        is False.
+
+        :param bool audio_only_bool:
+            Audio only streams, defaults to True.
+        :rtype: :class:`StreamQuery <StreamQuery>`
+        :returns: A StreamQuery object such that either every Stream is
+        audio only, or every stream is not audio only.
+        """
+        return StreamQuery(
+            list(
+                filter(
+                    (
+                        lambda s: (
+                            s.includes_audio_track and not s.includes_video_track
+                        )
+                        is audio_only_bool
+                    ),
+                    self.fmt_streams,
+                )
+            )
+        )
+
+    def video_only(self, video_only_bool: bool = True) -> "StreamQuery":
+        """Return only streams which are audio only if video_only_bool is
+        True, return only streams which are not audio only if video_only_bool
+        is False.
+        :param bool video_only_bool:
+            Video only streams, defaults to True.
+        :rtype: :class:`StreamQuery <StreamQuery>`
+        :returns: A StreamQuery object such that either every Stream is
+        video only, or every stream is not video only.
+        """
+        return StreamQuery(
+            list(
+                filter(
+                    (
+                        lambda s: (
+                            s.includes_video_track and not s.includes_audio_track
+                        )
+                        is video_only_bool
+                    ),
+                    self.fmt_streams,
+                )
+            )
+        )
+
+    def abr(self, average_bitrate: int) -> "StreamQuery":
+        """Return only streams of the given average bitrate.
+        :param str average_bitrate:
+            The audio average bitrate.
+        :rtype: :class:`StreamQuery <StreamQuery>` or None
+        :returns: A StreamQuery object such that every Stream has the
+        bitrate defined by the user, or None if none are available.
+        """
+        return StreamQuery(
+            list(
+                filter(
+                    lambda s: s.abr == f"{str(average_bitrate)}kbps", self.fmt_streams
+                )
+            )
+        )
+
+    def res(self, resolution: int) -> "StreamQuery":
+        """Return only streams of the given resolution.
+        :param str resolution:
+            The video resolution.
+        :rtype: :class:`StreamQuery <StreamQuery>` or None
+        :returns: A StreamQuery object such that every Stream is of the
+        resolution defined by the user, or None if none are available.
+        """
+        return StreamQuery(
+            list(
+                filter(
+                    lambda s: s.resolution == f"{str(resolution)}p", self.fmt_streams
+                )
+            )
+        )
+
+    def fps(self, framerate: int) -> "StreamQuery":
+        """Return only streams of the given framerate.
+        :param str framerate:
+            The frames per second.
+        :rtype: :class:`StreamQuery <StreamQuery>` or None
+        :returns: A StreamQuery object such that every Stream is of the
+        resolution defined by the user, or None if none are available.
+        """
+        return StreamQuery(list(filter(lambda s: s.fps == framerate, self.fmt_streams)))
+
+    def primary_type(self, type: str) -> "StreamQuery":
+        """Return only streams of the given type.
+        :param str type:
+            "type" part of the ``mime_type`` (e.g.: audio, video).
+        :rtype: :class:`StreamQuery <StreamQuery>`
+        :returns: A StreamQuery object such that every Stream is of the
+        type defined by the user.
+        """
+        return StreamQuery(list(filter(lambda s: s.type == type, self.fmt_streams)))
+
+    def mime_type(self, mime_type: str) -> "StreamQuery":
+        """Return only streams of the given mime_type.
+        :param str mime_type:
+            Two-part identifier for file formats and format contents
+            composed of a "type", a "subtype".
+        :rtype: :class:`StreamQuery <StreamQuery>`
+        :returns: A StreamQuery object such that every Stream is of the
+        mime_type defined by the user.
+        """
+        return StreamQuery(
+            list(filter(lambda s: s.mime_type == mime_type, self.fmt_streams))
+        )
+
+    def subtype(self, subtype: str) -> "StreamQuery":
+        """Return only streams of the given subtype .
+        :param str subtype:
+            "subtype" part of the ``mime_type`` (e.g.: audio, video).
+        :rtype: :class:`StreamQuery <StreamQuery>`
+        :returns: A StreamQuery object such that every Stream is of the
+        subtype defined by the user.
+        """
+        return StreamQuery(
+            list(filter(lambda s: s.subtype == subtype, self.fmt_streams))
+        )
+
+    def video_codec(self, vid_codec: str) -> "StreamQuery":
+        """Return only streams with the given video codec.
+        :param str vid_codec: Video compression format.
+        :rtype: :class:`StreamQuery <StreamQuery>` or None
+        :returns: A StreamQuery object such that every stream is encoded
+        using the given video codec, or None if none are available.
+        """
+        return StreamQuery(
+            list(filter(lambda s: s.video_codec == vid_codec, self.fmt_streams))
+        )
+
+    def audio_codec(self, aud_codec: str) -> "StreamQuery":
+        """Return only streams with the given audio codec.
+        :param str aud_codec: Audio compression format.
+        :rtype: :class:`StreamQuery <StreamQuery>` or None
+        :returns: A StreamQuery object such that every stream is encoded
+        using the given audio codec, or None if none are available.
+        """
+        return StreamQuery(
+            list(filter(lambda s: s.audio_codec == aud_codec, self.fmt_streams))
+        )
+
+    def is_progressive(self) -> "StreamQuery":
+        """Return only progressive streams.
+        :rtype: :class:`StreamQuery <StreamQuery>`
+        :returns: A StreamQuery object such that every Stream is progressive.
+        """
+        return StreamQuery(list(filter(lambda s: s.is_progressive, self.fmt_streams)))
+
+    def is_adaptive(self) -> "StreamQuery":
+        """Return only adaptive/DASH streams.
+        :rtype: :class:`StreamQuery <StreamQuery>`
+        :returns: A StreamQuery object such that every Stream is adaptive.
+        """
+        return StreamQuery(list(filter(lambda s: s.is_adaptive, self.fmt_streams)))
+
+    def custom_filters(self, filters: List[Callable]) -> "StreamQuery":
+        """Return only those streams such that when applied to all functions
+        in the given list, the functions all return True.
+        :rtype: :class:`StreamQuery <StreamQuery>` or None
+        :returns: A StreamQuery object such for every stream, every function in the
+        given list returns True when the stream is applied to it, or None if none
+        are available.
+        """
+        fmt_streams = self.fmt_streams
+        for func in filters:
+            fmt_streams = list(filter(func, fmt_streams))
+        return StreamQuery(fmt_streams)
+
+    def first(self) -> Optional[Stream]:
+        """Get the first :class:`Stream <Stream>` in the results.
+
+        :rtype: :class:`Stream <Stream>` or None
+        :returns:
+            the first result of this query or None if the result doesn't
+            contain any streams.
+
+        """
+        try:
+            return self.fmt_streams[0]
+        except IndexError:
+            return None
+
+    def last(self):
+        """Get the last :class:`Stream <Stream>` in the results.
+
+        :rtype: :class:`Stream <Stream>` or None
+        :returns:
+            Return the last result of this query or None if the result
+            doesn't contain any streams.
+
+        """
+        try:
+            return self.fmt_streams[-1]
+        except IndexError:
+            pass
+
+    @deprecated("Get the size of this list directly using len()")
+    def count(self, value: Optional[str] = None) -> int:  # pragma: no cover
+        """Get the count of items in the list.
+
+        :rtype: int
+        """
+        if value:
+            return self.fmt_streams.count(value)
+
+        return len(self)
+
+    @deprecated("This object can be treated as a list, all() is useless")
+    def all(self) -> List[Stream]:  # pragma: no cover
+        """Get all the results represented by this query as a list.
+
+        :rtype: list
+
+        """
+        return self.fmt_streams
+
+    @deprecated("Replaced by new individual methods")
     def filter(
         self,
         fps=None,
@@ -172,179 +512,12 @@ class StreamQuery(Sequence):
 
         return self._filter(filters)
 
+    @deprecated("Replaced by new individual methods")
     def _filter(self, filters: List[Callable]) -> "StreamQuery":
         fmt_streams = self.fmt_streams
         for filter_lambda in filters:
             fmt_streams = filter(filter_lambda, fmt_streams)
         return StreamQuery(list(fmt_streams))
-
-    def order_by(self, attribute_name: str) -> "StreamQuery":
-        """Apply a sort order. Filters out stream the do not have the attribute.
-
-        :param str attribute_name:
-            The name of the attribute to sort by.
-        """
-        has_attribute = [
-            s for s in self.fmt_streams if getattr(s, attribute_name) is not None
-        ]
-        # Check that the attributes have string values.
-        if has_attribute and isinstance(getattr(has_attribute[0], attribute_name), str):
-            # Try to return a StreamQuery sorted by the integer representations
-            # of the values.
-            try:
-                return StreamQuery(
-                    sorted(
-                        has_attribute,
-                        key=lambda s: int(
-                            "".join(filter(str.isdigit, getattr(s, attribute_name)))
-                        ),  # type: ignore  # noqa: E501
-                    )
-                )
-            except ValueError:
-                pass
-
-        return StreamQuery(
-            sorted(has_attribute, key=lambda s: getattr(s, attribute_name))
-        )
-
-    def desc(self) -> "StreamQuery":
-        """Sort streams in descending order.
-
-        :rtype: :class:`StreamQuery <StreamQuery>`
-
-        """
-        return StreamQuery(self.fmt_streams[::-1])
-
-    def asc(self) -> "StreamQuery":
-        """Sort streams in ascending order.
-
-        :rtype: :class:`StreamQuery <StreamQuery>`
-
-        """
-        return self
-
-    def get_by_itag(self, itag: int) -> Optional[Stream]:
-        """Get the corresponding :class:`Stream <Stream>` for a given itag.
-
-        :param int itag:
-            YouTube format identifier code.
-        :rtype: :class:`Stream <Stream>` or None
-        :returns:
-            The :class:`Stream <Stream>` matching the given itag or None if
-            not found.
-
-        """
-        return self.itag_index.get(int(itag))
-
-    def get_by_resolution(self, resolution: str) -> Optional[Stream]:
-        """Get the corresponding :class:`Stream <Stream>` for a given resolution.
-
-        Stream must be a progressive mp4.
-
-        :param str resolution:
-            Video resolution i.e. "720p", "480p", "360p", "240p", "144p"
-        :rtype: :class:`Stream <Stream>` or None
-        :returns:
-            The :class:`Stream <Stream>` matching the given itag or None if
-            not found.
-
-        """
-        return self.filter(
-            progressive=True, subtype="mp4", resolution=resolution
-        ).first()
-
-    def get_lowest_resolution(self) -> Optional[Stream]:
-        """Get lowest resolution stream that is a progressive mp4.
-
-        :rtype: :class:`Stream <Stream>` or None
-        :returns:
-            The :class:`Stream <Stream>` matching the given itag or None if
-            not found.
-
-        """
-        return (
-            self.filter(progressive=True, subtype="mp4").order_by("resolution").first()
-        )
-
-    def get_highest_resolution(self) -> Optional[Stream]:
-        """Get highest resolution stream that is a progressive video.
-
-        :rtype: :class:`Stream <Stream>` or None
-        :returns:
-            The :class:`Stream <Stream>` matching the given itag or None if
-            not found.
-
-        """
-        return self.filter(progressive=True).order_by("resolution").last()
-
-    def get_audio_only(self, subtype: str = "mp4") -> Optional[Stream]:
-        """Get highest bitrate audio stream for given codec (defaults to mp4)
-
-        :param str subtype:
-            Audio subtype, defaults to mp4
-        :rtype: :class:`Stream <Stream>` or None
-        :returns:
-            The :class:`Stream <Stream>` matching the given itag or None if
-            not found.
-        """
-        return self.filter(only_audio=True, subtype=subtype).order_by("abr").last()
-
-    def otf(self, is_otf: bool = False) -> "StreamQuery":
-        """Filter stream by OTF, useful if some streams have 404 URLs
-
-        :param bool is_otf: Set to False to retrieve only non-OTF streams
-        :rtype: :class:`StreamQuery <StreamQuery>`
-        :returns: A StreamQuery object with otf filtered streams
-        """
-        return self._filter([lambda s: s.is_otf == is_otf])
-
-    def first(self) -> Optional[Stream]:
-        """Get the first :class:`Stream <Stream>` in the results.
-
-        :rtype: :class:`Stream <Stream>` or None
-        :returns:
-            the first result of this query or None if the result doesn't
-            contain any streams.
-
-        """
-        try:
-            return self.fmt_streams[0]
-        except IndexError:
-            return None
-
-    def last(self):
-        """Get the last :class:`Stream <Stream>` in the results.
-
-        :rtype: :class:`Stream <Stream>` or None
-        :returns:
-            Return the last result of this query or None if the result
-            doesn't contain any streams.
-
-        """
-        try:
-            return self.fmt_streams[-1]
-        except IndexError:
-            pass
-
-    @deprecated("Get the size of this list directly using len()")
-    def count(self, value: Optional[str] = None) -> int:  # pragma: no cover
-        """Get the count of items in the list.
-
-        :rtype: int
-        """
-        if value:
-            return self.fmt_streams.count(value)
-
-        return len(self)
-
-    @deprecated("This object can be treated as a list, all() is useless")
-    def all(self) -> List[Stream]:  # pragma: no cover
-        """Get all the results represented by this query as a list.
-
-        :rtype: list
-
-        """
-        return self.fmt_streams
 
     def __getitem__(self, i: Union[slice, int]):
         return self.fmt_streams[i]
