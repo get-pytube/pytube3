@@ -131,10 +131,7 @@ def get_format_profile(itag: int) -> Dict:
         YouTube format identifier code.
     """
     itag = int(itag)
-    if itag in ITAGS:
-        res, bitrate = ITAGS[itag]
-    else:
-        res, bitrate = None, None
+    res, bitrate = ITAGS[itag] if itag in ITAGS else (None, None)
     return {
         "resolution": res,
         "abr": bitrate,

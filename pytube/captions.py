@@ -116,11 +116,7 @@ class Caption:
 
         filename += f" ({self.code})"
 
-        if srt:
-            filename += ".srt"
-        else:
-            filename += ".xml"
-
+        filename += '.srt' if srt else '.xml'
         file_path = os.path.join(target_directory(output_path), filename)
 
         with open(file_path, "w", encoding="utf-8") as file_handle:

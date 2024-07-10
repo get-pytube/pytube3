@@ -158,11 +158,11 @@ def build_playback_report(youtube: YouTube) -> None:
     ts = int(dt.datetime.utcnow().timestamp())
     fp = os.path.join(os.getcwd(), f"yt-video-{youtube.video_id}-{ts}.json.gz")
 
-    js = youtube.js
-    watch_html = youtube.watch_html
-    vid_info = youtube.vid_info
-
     with gzip.open(fp, "wb") as fh:
+        js = youtube.js
+        watch_html = youtube.watch_html
+        vid_info = youtube.vid_info
+
         fh.write(
             json.dumps(
                 {

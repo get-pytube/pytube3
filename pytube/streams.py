@@ -230,7 +230,7 @@ class Stream:
 
         bytes_remaining = self.filesize
         logger.debug(
-            "downloading (%s total bytes) file to %s", self.filesize, file_path,
+            'downloading (%s total bytes) file to %s', bytes_remaining, file_path
         )
 
         with open(file_path, "wb") as fh:
@@ -265,10 +265,7 @@ class Stream:
         :rtype: io.BytesIO buffer
         """
         bytes_remaining = self.filesize
-        logger.info(
-            "downloading (%s total bytes) file to buffer", self.filesize,
-        )
-
+        logger.info('downloading (%s total bytes) file to buffer', bytes_remaining)
         for chunk in request.stream(self.url):
             # reduce the (bytes) remainder by the length of the chunk.
             bytes_remaining -= len(chunk)
