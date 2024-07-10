@@ -10,10 +10,9 @@ packages = ["pytube3"]
 
 [project]
 name = "pytube3"
-dynamic = "10.0.0"
+dynamic = "9.6.5"
 description = "Python 3 library for downloading YouTube Videos."
 readme = "README.md"
-license = "MIT"
 requires-python = ">=3.10"
 authors = [
     { name = "Nick Ficano", email = "nficano@gmail.com" },
