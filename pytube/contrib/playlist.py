@@ -143,8 +143,8 @@ class Playlist(Sequence):
         """
         yield from (YouTube(url) for url in self.video_urls)
 
-    def __getitem__(self, i: Union[slice, int]) -> Union[str, List[str]]:
-        return self.video_urls[i]
+    def __getitem__(self, i: Union[slice, int]) -> Union[YouTube, List[YouTube]]:
+        return YouTube(self.video_urls[i])
 
     def __len__(self) -> int:
         return len(self.video_urls)
