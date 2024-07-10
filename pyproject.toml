@@ -1,0 +1,70 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[options]
+packages = ["pytube3"]
+
+[tool.setuptools]
+packages = ["pytube3"]
+
+[project]
+name = "pytube3"
+dynamic = "9.6.5"
+description = "Python 3 library for downloading YouTube Videos."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+    { name = "Nick Ficano", email = "nficano@gmail.com" },
+    { name = "Harold Martin", email = "harold.martin@gmail.com" },
+]
+keywords = ["download", "stream", "video", "youtube"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft",
+    "Operating System :: POSIX",
+    "Operating System :: Unix",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Internet",
+    "Topic :: Multimedia :: Video",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Terminals",
+    "Topic :: Utilities",
+]
+[project.optional-dependencies]
+lint = ["pyroma", "pytype", "ruff", "pytest"]
+
+
+[project.scripts]
+pytube3 = "pytube.cli:main"
+
+[project.urls]
+"Bug Reports" = "https://github.com/hbmartin/pytube3/issues"
+Homepage = "https://github.com/hbmartin/pytube3"
+"Read the Docs" = "https://pytube3.readthedocs.io/en/latest/?badge=latest"
+
+[tool.ruff]
+# Exclude a variety of commonly ignored directories.
+exclude = [".bzr", ".direnv", ".eggs", ".git", ".git-rewrite", ".hg", ".ipynb_checkpoints", ".mypy_cache", ".nox", ".pants.d", ".pyenv", ".pytest_cache", ".pytype", ".ruff_cache", ".svn", ".tox", ".venv", ".vscode", "__pypackages__", "_build", "buck-out", "build", "dist", "node_modules", "setup.py", "site-packages", "venv"]
+
+# Same as Black.
+line-length = 88
+indent-width = 4
+target-version = "py310"
+
+lint.select = ["ALL"]
+
+[tool.ruff.format]
+# Same as Black.
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"

@@ -1,0 +1,32 @@
+name: Lint
+on: push
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      id: cpython3
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: pip
+        cache-dependency-path: pyproject.toml
+    - run: echo '${{ steps.cpython3.outputs.python-version }}'
+    - run: pip install -e '.[lint]'
+    - run: ruff check pytube
+    - name: Run pytype if not on 3.12
+      run: |
+        if [[ '${{ steps.cpython3.outputs.python-version }}' == *"3.12"* ]]; then
+          echo "pytype does not support 3.12: https://github.com/google/pytype/issues/1475"
+        else
+          pytype -j auto pytube
+        fi
+    - uses: psf/black@stable
+      with:
+        options: "--check --verbose"
+    - run: pyroma . --min=10
