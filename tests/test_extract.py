@@ -82,3 +82,9 @@ def test_mime_type_codec_with_no_match_should_error():
 def test_get_ytplayer_config_with_no_match_should_error():
     with pytest.raises(RegexMatchError):
         extract.get_ytplayer_config("")
+
+
+def test_apply_descrambler_with_no_adaptive_streams(no_adaptive_streams):
+    assert len(no_adaptive_streams.streams) == 2
+    assert no_adaptive_streams.streams[0].itag == 18
+    assert no_adaptive_streams.streams[1].itag == 22

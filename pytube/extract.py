@@ -278,12 +278,12 @@ def apply_descrambler(stream_data: Dict, key: str) -> None:
     if key == "url_encoded_fmt_stream_map" and not stream_data.get(
         "url_encoded_fmt_stream_map"
     ):
-        formats = json.loads(stream_data["player_response"])["streamingData"]["formats"]
-        formats.extend(
-            json.loads(stream_data["player_response"])["streamingData"][
-                "adaptiveFormats"
-            ]
-        )
+        all_formats = json.loads(stream_data["player_response"])["streamingData"]
+        formats = all_formats["formats"]
+
+        if "adaptiveFormats" in all_formats:
+            formats.extend(all_formats["adaptiveFormats"])
+
         try:
             stream_data[key] = [
                 {
@@ -317,5 +317,9 @@ def apply_descrambler(stream_data: Dict, key: str) -> None:
             {k: unquote(v) for k, v in parse_qsl(i)}
             for i in stream_data[key].split(",")
         ]
+
+    print(key)
+    print('\n\n')
+    print(stream_data[key])
 
     logger.debug("applying descrambler")
